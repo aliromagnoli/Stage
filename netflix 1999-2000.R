@@ -6,8 +6,9 @@ setwd("C:/Users/alice/Desktop/stage/netflix 1999-2000")
 
 ##pacchetti e librerie utilizzati
 
-#library(reshape2) #acast()
-library(randomForest)
+#library(reshape2) #per acast()
+library(randomForest) #per randomForest()
+library(rpart) #per rpart()
 
 ##importazione del dataset
 
@@ -75,12 +76,18 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
     a <- df[df$id == record$id, 3:5]
     predict(forest1, a, type="prob") 
     rate.predetto <- predict(forest1, a, type="response")
-    record$rate #rate: 2
+    rate.predetto #rate predetto: 3
+    record$rate #rate effettivo: 2
     
 #9 
     #differenza rate predetto e rate effettivo
     diff <- as.numeric((rate.predetto)[[1]]) - as.numeric(record$rate)
     diff #differiscono di 1
+    
+#10: tentativo con decision tree
+    decisionTree <- rpart(rate ~ ., data=M, method="class")
+    print(decisionTree)
+    predict(decisionTree, a, type="class") #rate predetto: 3
      
     #rendo nuovamente visibile il rate di record all'interno di df
     df[df$id == record$id, ]$rate <- record$rate
@@ -92,4 +99,3 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
 } else { #non ci sono dati disponibili
   print("nessun dato disponibile", quote=FALSE)
 }
-f
