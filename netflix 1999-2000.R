@@ -6,7 +6,7 @@ setwd("C:/Users/alice/Desktop/stage/netflix 1999-2000")
 
 ##pacchetti e librerie utilizzati
 
-library(reshape2) #per acast()
+#library(reshape2) #per acast()
 library(randomForest) #per randomForest()
 library(rpart) #per rpart()
 
@@ -64,7 +64,7 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
     }
     
     #D: matrice che ha per colonne i film di I e per righe gli utenti che hanno valutato almeno v film di I
-    D <- acast(M, customer ~ movie , value.var='rate', dimnames=list(utenti=unique(M$customer), film=(M$movie)))
+    #D <- acast(M, customer ~ movie , value.var='rate', dimnames=list(utenti=unique(M$customer), film=(M$movie)))
 
 #7
     M <- M[,3:5] #mantengo solo le colonne relative a customer, movie e rate
@@ -83,7 +83,7 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
     #considero tutte le valutazioni effettuate dall'utente u + il rate NA per il movie m
     b <- rbind(I, df[df$id==record$id,])
     predict(forest1, b, type="response")
-    tail(predict(forest1, a, type="response"), 1)
+    tail(predict(forest1, a, type="response"), 1) #rate predetto: 3
     
 #9 
     #differenza rate predetto e rate effettivo
