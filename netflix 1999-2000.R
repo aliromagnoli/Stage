@@ -36,8 +36,6 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
   df[df$id == record$id, ]$rate <- NA 
   #I: insieme delle valutazioni effettuate finora dall'utente u
   I <- df[df$day < record$day & df$customer == record$customer,]
-  #aggiungo record (senza rate) ad I
-  #I <- rbind(I, df[df$id == record$id, ])
 
 #5
   n <- 5
