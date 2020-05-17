@@ -20,6 +20,7 @@ df$id <- 1:nrow(df)
 df$customer <- as.factor(df$customer)
 colnames(df)[5] <- "rate"
 options(max.print=10000000)
+
 #####
 
 #1
@@ -35,7 +36,7 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
   #nascondo il rate di record all'interno di df
   df[df$id == record$id, ]$rate <- NA 
   #I: insieme delle valutazioni effettuate finora dall'utente u
-  I <- df[df$day < record$day & df$customer == record$customer,]
+  I <- df[df$day < record$day & df$customer == record$customer, ]
 
 #5
   n <- 5
@@ -46,6 +47,8 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
     day1 <- seq(record$day, length = 2, by = "-3 months")[2] #estremo inferiore
     day2 <- record$day #estremo superiore
     
+    #I : insieme delle valutazioni effettuate dall'utente u nel periodo h
+    I <-  I[I$day >= day1, ]
     #L: insieme delle valutazioni effettuate sui film di I nel periodo h
     L <- df[(df$movie %in% I$movie | df$movie == record$movie) & df$day >= day1 & df$day < day2, ] 
     
@@ -66,28 +69,37 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
     D <- acast(M, customer ~ movie , value.var='rate', dimnames=list(utenti=unique(M$customer), film=unique(M$movie)))
     #conversione di D in un dataframe
     D <- as.data.frame(D)
-    #conversione da int a factor degli elementi di D
-    D[sapply(D, is.integer)] <- lapply(D[sapply(D, is.integer)], as.factor)
-
+   
 #7
     #riscrivo i nomi delle colonne in un formato accettabile
     names(D) <- make.names(names(D)) #X + numero identificativo del film
+    
     record$movie #10013
     #chiamo m il nome della colonna relativa al film m 
     names(D)[names(D) == paste("X", record$movie, sep="")] <- 'm'
     
-    set.seed(1)
-    forest <- randomForest(m ~ ., data=D, na.action = na.omit)
+    #assegno a uRate i rates di u 
+    uRate <- D[which(is.na(D$m)),]
     
-    #forest2 <- randomForest(rate ~ ., data=M, importance=TRUE, proximity=TRUE)
-    #OOB estimate of error rate: ~64% per entrambi
-  
+    #tolgo la riga relativa a u da D
+    D <- D[which(!is.na(D$m)),]
+    
+    #conversione da NA a -999 in D
+    D[which(is.na(D), arr.ind = TRUE)] <- -999
+    
+    #conversione da int a factor degli elementi di D
+    D[sapply(D, is.integer)] <- lapply(D[sapply(D, is.integer)], as.factor)
+    
+    #creazione della random forest
+    forest <- randomForest(x = D[, -1], y=D$m)
+    print(forest) #OOB estimate of error rate: ~ 64%
+    #forest1 <- randomForest(m ~ ., data=D)
+
 #8
-    #trovo la riga corrispondente a u
-    index <- which(is.na(D$m)) #85
     #predico il rate di u per m
-    predict(forest, D[index,], type="prob") 
-    rate.predetto <- predict(forest, D[index,], type="response")
+    uRate[which(is.na(uRate), arr.ind = TRUE)] <- -999
+    rate.predetto <- predict(forest, uRate, type="response") 
+    
     rate.predetto #rate predetto: 3
     record$rate #rate effettivo: 2
     
@@ -99,7 +111,7 @@ if(offset <= dim(df)[1]){ #ci sono dati disponibili, continuo
 #10: tentativo con decision tree
     decisionTree <- rpart(m ~ ., data=D, method="class")
     print(decisionTree)
-    predict(decisionTree, D[index,], type="class") #rate predetto: 3
+    predict(decisionTree, uRate, type="class") #rate predetto: 3
     
     #rinomino la colonna m con l'identificativo del film corrispondente
     names(D)[names(D) == 'm'] <- paste("X", as.numeric(as.character(record$movie)), sep="")
