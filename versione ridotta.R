@@ -31,17 +31,21 @@ l <- nrow(df)-offset
 errori <- data.frame(customer=integer(l), movie=integer(l), rateReale=integer(l), ratePredetto=integer(l))
 k <- 1
 
+giorno.prima <- df[df$id == offset, ]$day
+  
 #2
 while(offset <= dim(df)[1]){ #ci sono dati disponibili
-
+  
 #3
   record <- df[df$id == offset+1,] #considero la valutazione immediatamente successiva ad offset
-  print(record)
-
+  
+  if(record$day != giorno.prima)
+    print(record)
+  
 #4
   #I: insieme delle valutazioni effettuate finora dall'utente u
   I <- df[df$day < record$day & df$customer == record$customer, ]
-
+  
 #5
   n <- 5
   if(nrow(I)>=n) { #l'utente u ha valutato abbastanza film 
@@ -76,7 +80,7 @@ while(offset <= dim(df)[1]){ #ci sono dati disponibili
         j <- j + nrow(L[L$customer==i,])
       }
     }
-  
+    
     M <- na.omit(M) #tolgo le righe in più di M
     
     if(nrow(M) != 0) { #M non è vuoto
@@ -93,14 +97,14 @@ while(offset <= dim(df)[1]){ #ci sono dati disponibili
       D <- as.data.frame(D)
       
       if(nrow(D) > 2*ncol(D)){ #il numero di righe di D è più del doppio del numero di colonne
-     
+        
 #7
         #riscrivo i nomi delle colonne in un formato accettabile
         names(D) <- make.names(names(D)) #X + numero identificativo del film
-
+        
         #chiamo m il nome della colonna relativa al film m 
         names(D)[names(D) == paste("X", record$movie, sep="")] <- 'm'
-      
+        
         #assegno a uRate i rates di u 
         uRate <- D[which(is.na(D$m)),]
         
@@ -116,23 +120,14 @@ while(offset <= dim(df)[1]){ #ci sono dati disponibili
         
         #creazione della random forest
         forest <- randomForest(x = D[, -ix], y=D$m)
-        print(forest)
-      
+        
 #8
         #conversione da NA a -999 in uRate
         uRate[which(is.na(uRate), arr.ind = TRUE)] <- -999
         #predico il rate di u per m
         rate.predetto <- predict(forest, uRate[, -ix], type="response") 
-        
-        print(paste("rate predetto:", rate.predetto)) 
-        print(paste("rate effettivo:", record$rate)) 
 
-#9  
-        #differenza rate predetto e rate effettivo
-        ######
-        #diff <- as.numeric((rate.predetto)[[1]]) - as.numeric(record$rate)
-        #print(paste("differenza tra rate predetto e rate effettivo:", diff))
-        
+#9      
         #aggiorno il dataframe errori
         errori[k,] <- c(as.numeric(levels(record$customer))[record$customer], as.numeric(levels(record$movie))[record$movie], record$rate, rate.predetto)
         k <- k+1
@@ -140,18 +135,10 @@ while(offset <= dim(df)[1]){ #ci sono dati disponibili
         #rinomino la colonna m con l'identificativo del film corrispondente
         names(D)[names(D) == 'm'] <- paste("X", as.numeric(as.character(record$movie)), sep="")
         
-        
-      } else { # il numero di righe di D è minore o uguale al doppio delle colonne di D
-        print(paste("D contiene troppi pochi utenti rispetto al numero di film"), quote=FALSE)
       }
-      
-    } else { #m non è stato valutato o gli utenti hanno visto pochi film tra quelli visti da u
-      print(paste("il film", record$movie, "non ha ricevuto abbastanza valutazioni o gli utenti hanno visto pochi film tra quelli visti da", record$customer), quote=FALSE)
     }
-         
-  } else { #l'utente u non ha valutato abbastanza film 
-    print(paste("l'utente", record$customer, "non ha valutato abbastanza film"), quote=FALSE)
   }
   
+  giorno.prima <- record$day
   offset <- offset + 1 #considero la valutazione successiva
 }
