@@ -31,6 +31,20 @@ l <- nrow(df)-offset
 errori <- data.frame(customer=integer(l), movie=integer(l), rateReale=integer(l), ratePredetto=integer(l))
 k <- 1
 
+#accuratezza
+
+#totali: numero di predizioni effettuate
+  #tot: numero totale di predizioni
+  #tot1 ... tot5: numero totale di predizioni del rate 1...5
+totali <- data.frame(tot=0, tot1=0, tot2=0, tot3=0, tot4=0, tot5=0)
+
+#corrette: numero di predizioni effettuate correttamente
+#corr: numero totale di predizioni corrette
+#corr1 ... corr5: numero totale di predizioni corrette del rate 1...5
+corrette <- data.frame(corr=0, corr1=0, corr2=0, corr3=0, corr4=0, corr5=0)
+
+accuratezza <- data.frame(day=as.Date(integer(l), origin = "1970-01-01"), totale=numeric(l), acc1=numeric(l), acc2=numeric(l), acc3=numeric(l), acc4=numeric(l), acc5=numeric(l))
+
 #2
 while(offset <= dim(df)[1]){ #ci sono dati disponibili
 
@@ -127,14 +141,34 @@ while(offset <= dim(df)[1]){ #ci sono dati disponibili
         print(paste("rate predetto:", rate.predetto)) 
         print(paste("rate effettivo:", record$rate)) 
 
-#9  
-        #differenza rate predetto e rate effettivo
-        ######
-        #diff <- as.numeric((rate.predetto)[[1]]) - as.numeric(record$rate)
-        #print(paste("differenza tra rate predetto e rate effettivo:", diff))
-        
+#9
         #aggiorno il dataframe errori
         errori[k,] <- c(as.numeric(levels(record$customer))[record$customer], as.numeric(levels(record$movie))[record$movie], record$rate, rate.predetto)
+        
+        #aggiorno l'accuratezza
+        totali$tot <- totali$tot + 1
+        if(rate.predetto == record$rate)
+          corrette$corr <- corrette$corr + 1
+        switch(record$rate,
+               "1" = {switch(record$rate==rate.predetto, corrette$corr1 <- corrette$corr1 + 1, )
+                 totali$tot1 <- totali$tot1 + 1}, 
+               "2" = {switch(record$rate==rate.predetto, corrette$corr2 <- corrette$corr2 + 1, )
+                 totali$tot2 <- totali$tot2 + 1}, 
+               "3" = {switch(record$rate==rate.predetto, corrette$corr3 <- corrette$corr3 + 1, )
+                 totali$tot3 <- totali$tot3 + 1},
+               "4" = {switch(record$rate==rate.predetto, corrette$corr4 <- corrette$corr4 + 1, )
+                 totali$tot4 <- totali$tot4 + 1}, 
+               "5" = {switch(record$rate==rate.predetto, corrette$corr5 <- corrette$corr5 + 1, )
+                 totali$tot5 <- totali$tot5 + 1}
+              )
+        
+        accuratezza[k, ] <- c(day=paste(as.Date(record$day,origin='1970-01-01')), totale=corrette$corr/totali$tot, acc1=0, acc2=0, acc3=0, acc4=0, acc5=0)
+        switch(totali$tot1!=0, accuratezza[k, ]$acc1 <- corrette$corr1/totali$tot1, 0)
+        switch(totali$tot2!=0, accuratezza[k, ]$acc2 <- corrette$corr2/totali$tot2, 0)
+        switch(totali$tot3!=0, accuratezza[k, ]$acc3 <- corrette$corr3/totali$tot3, 0)
+        switch(totali$tot4!=0, accuratezza[k, ]$acc4 <- corrette$corr4/totali$tot4, 0)
+        switch(totali$tot5!=0, accuratezza[k, ]$acc5 <- corrette$corr5/totali$tot5, 0)
+        
         k <- k+1
         
         #rinomino la colonna m con l'identificativo del film corrispondente
